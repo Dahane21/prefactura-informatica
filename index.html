@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prefacturación Informática BBVA</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="libWarning" class="lib-warning hidden">
+    No se pudo cargar el motor de Excel. Verifica tu conexión a internet y vuelve a abrir el sistema.
+  </div>
+
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">TS</div>
+        <div>
+          <div class="brand-title">TRADEL SERVICE</div>
+          <div class="brand-sub">Prefacturación Informática</div>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-btn active" data-view="nueva"><span>▣</span> Nueva prefactura</button>
+        <button class="nav-btn" data-view="revision"><span>⚠</span> Por revisar <b id="reviewBadge" class="badge hidden">0</b></button>
+        <button class="nav-btn" data-view="tarifarios"><span>▤</span> Tarifarios</button>
+        <button class="nav-btn" data-view="indicadores"><span>▥</span> Indicadores</button>
+        <button class="nav-btn" data-view="historial"><span>◷</span> Historial</button>
+      </nav>
+
+      <div class="sidebar-note">
+        <strong>Reglas activas</strong>
+        <span>MINI = SI → tarifario MINI</span>
+        <span>MINI = NO → tarifario normal</span>
+        <span>IGV: 18%</span>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1 id="viewTitle">Nueva prefactura</h1>
+          <p id="viewSubtitle">Carga la data mensual, valida y genera el Excel final.</p>
+        </div>
+        <div class="topbar-status"><span class="status-dot"></span> Sistema local</div>
+      </header>
+
+      <section id="view-nueva" class="view active">
+        <div class="card upload-card">
+          <div class="upload-copy">
+            <div class="eyebrow">PASO 1</div>
+            <h2>Cargar data mensual</h2>
+            <p>Selecciona el Excel descargado de OneDrive y pegado en valores. Se procesarán únicamente las filas con <b>PRE</b> informado.</p>
+          </div>
+          <label class="drop-zone" id="dropZone">
+            <input id="dataFile" type="file" accept=".xlsx,.xls" hidden />
+            <div class="drop-icon">⇧</div>
+            <strong>Seleccionar Excel</strong>
+            <span>o arrástralo aquí</span>
+            <small id="loadedFileName">Ningún archivo cargado</small>
+          </label>
+        </div>
+
+        <div id="dashboard" class="hidden">
+          <div class="metric-grid">
+            <div class="metric"><span>Registros</span><strong id="mRows">0</strong><small>seleccionados</small></div>
+            <div class="metric"><span>Servicio local</span><strong id="mLocal">0</strong><small>LC</small></div>
+            <div class="metric"><span>Servicio nacional</span><strong id="mNational">0</strong><small>AE + TE</small></div>
+            <div class="metric warning"><span>Por revisar</span><strong id="mReview">0</strong><small>observaciones</small></div>
+            <div class="metric money"><span>Flete total</span><strong id="mFreight">S/ 0.00</strong><small>sin IGV</small></div>
+            <div class="metric money"><span>Total con IGV</span><strong id="mTotal">S/ 0.00</strong><small>18% incluido</small></div>
+          </div>
+
+          <div class="card action-card">
+            <div>
+              <div class="eyebrow">PASO 2</div>
+              <h2>Validación y generación</h2>
+              <p id="generationMessage">La prefactura estará disponible cuando no existan observaciones.</p>
+            </div>
+            <div class="action-buttons">
+              <button id="goReview" class="btn secondary">Ver por revisar</button>
+              <button id="generateBtn" class="btn primary" disabled>Generar prefactura</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h2>Vista previa</h2>
+                <p id="previewCaption">Primeros registros procesados.</p>
+              </div>
+              <div class="preview-tools">
+                <input id="previewGuideSearch" class="search preview-guide-search" type="search" placeholder="Buscar GR TRADEL o GR BBVA...">
+                <div class="pill" id="periodPill">PERIODO —</div>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table" id="previewTable"></table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-revision" class="view">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="eyebrow">CONTROL PREVIO</div>
+              <h2>Por revisar</h2>
+              <p>El sistema no generará la prefactura mientras existan registros con errores.</p>
+            </div>
+            <button id="revalidateBtn" class="btn secondary">Revalidar todo</button>
+          </div>
+          <div id="reviewEmpty" class="empty-state">
+            <div>✓</div><strong>Sin observaciones</strong><span>La data está lista para generar.</span>
+          </div>
+          <div id="reviewContent" class="hidden">
+            <div class="review-filter-bar">
+              <div id="reviewFilters" class="review-filters"></div>
+              <div id="reviewFilterInfo" class="review-filter-info"></div>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table review-table" id="reviewTable"></table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-tarifarios" class="view">
+        <div class="card">
+          <div class="card-head tariff-head">
+            <div>
+              <div class="eyebrow">MAESTROS</div>
+              <h2>Tarifarios</h2>
+              <p>Los cambios se guardan en este navegador y se aplican a las siguientes prefacturas.</p>
+            </div>
+            <button id="exportMasters" class="btn secondary">Respaldar tarifarios</button>
+          </div>
+
+          <div class="master-tabs">
+            <button class="master-tab active" data-master="normal">TARIFAS · Normal</button>
+            <button class="master-tab" data-master="mini">MINI · Mini Almacén</button>
+          </div>
+
+          <div class="master-toolbar">
+            <input id="masterSearch" class="search" placeholder="Buscar por código, oficina o ciudad..." />
+            <div class="toolbar-actions">
+              <label class="btn secondary file-btn">Actualizar desde Excel<input id="masterFile" type="file" accept=".xlsx,.xls" hidden /></label>
+              <button id="addMasterRow" class="btn secondary">+ Agregar fila</button>
+              <button id="restoreMaster" class="btn ghost danger">Restaurar original</button>
+            </div>
+          </div>
+          <div id="masterInfo" class="master-info"></div>
+          <div class="table-wrap master-wrap">
+            <table class="data-table master-table" id="masterTable"></table>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-indicadores" class="view">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="eyebrow">LEAD TIMES</div>
+              <h2>Configuración de tiempos de atención</h2>
+              <p>Estos tiempos se usan para calcular la fecha de plazo y el cumplimiento de cada servicio. Los domingos no se cuentan como día hábil.</p>
+            </div>
+            <button id="resetLeadTimes" class="btn ghost danger">Restaurar valores</button>
+          </div>
+
+          <div class="lead-grid">
+            <div class="lead-table-wrap">
+              <table class="data-table lead-table">
+                <thead><tr><th>Servicio</th><th>LC</th><th>TE</th><th>AE</th></tr></thead>
+                <tbody>
+                  <tr><td><b>ENTREGA</b></td><td><input id="lt-entrega-lc" type="number" min="0" step="1"></td><td><input id="lt-entrega-te" type="number" min="0" step="1"></td><td><input id="lt-entrega-ae" type="number" min="0" step="1"></td></tr>
+                  <tr><td><b>RECOJO</b></td><td><input id="lt-recojo-lc" type="number" min="0" step="1"></td><td><input id="lt-recojo-te" type="number" min="0" step="1"></td><td><input id="lt-recojo-ae" type="number" min="0" step="1"></td></tr>
+                  <tr><td><b>TRASLADO</b></td><td><input id="lt-traslado-lc" type="number" min="0" step="1"></td><td><input id="lt-traslado-te" type="number" min="0" step="1"></td><td><input id="lt-traslado-ae" type="number" min="0" step="1"></td></tr>
+                </tbody>
+              </table>
+              <button id="saveLeadTimes" class="btn primary lead-save">Guardar lead times</button>
+            </div>
+
+            <div class="holiday-box">
+              <label for="holidayList"><b>Feriados / días no laborables adicionales</b></label>
+              <p>Una fecha por línea en formato <b>dd/mm/aaaa</b>. Se excluyen además de los domingos.</p>
+              <textarea id="holidayList" placeholder="08/12/2025&#10;09/12/2025&#10;25/12/2025"></textarea>
+              <button id="saveHolidays" class="btn secondary">Guardar feriados</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="metric-grid indicator-metrics">
+          <div class="metric"><span>Servicios</span><strong id="iTotal">0</strong><small>periodo cargado</small></div>
+          <div class="metric success"><span>Cumplen</span><strong id="iOnTime">0</strong><small>dentro del plazo</small></div>
+          <div class="metric warning"><span>Por revisar</span><strong id="iLate">0</strong><small>fuera de plazo</small></div>
+          <div class="metric"><span>Cumplimiento</span><strong id="iCompliance">0%</strong><small>general</small></div>
+          <div class="metric"><span>Local</span><strong id="iLocalComp">0%</strong><small>cumplimiento LC</small></div>
+          <div class="metric"><span>Nacional</span><strong id="iNatComp">0%</strong><small>cumplimiento AE + TE</small></div>
+        </div>
+
+        <div class="card indicator-preview-card">
+          <div class="card-head">
+            <div>
+              <div class="eyebrow">VISTA PREVIA</div>
+              <h2>Revisión rápida de fechas de entrega</h2>
+              <p>Trabaja como en una tabla de Excel: filtra, ordena, selecciona varias guías, corrige fechas y asigna el motivo de las que queden fuera de plazo. Los motivos pasan automáticamente a la Revisión Tradel.</p>
+            </div>
+            <div class="action-buttons">
+              <button id="discardIndicatorChanges" class="btn secondary" disabled>Descartar cambios</button>
+              <button id="saveIndicatorChanges" class="btn primary" disabled>Guardar fechas</button>
+            </div>
+          </div>
+
+          <div class="indicator-view-tabs">
+            <button id="indicatorViewAll" class="indicator-view-tab active" type="button">Todos los servicios <b id="indicatorAllTabCount">0</b></button>
+            <button id="indicatorViewLate" class="indicator-view-tab" type="button">Fuera de plazo / Por revisar <b id="indicatorLateTabCount">0</b></button>
+          </div>
+
+          <div class="indicator-filterbar">
+            <input id="indicatorSearch" class="search" type="search" placeholder="Buscar guía, oficina o código...">
+            <select id="indicatorTerrFilter"><option value="ALL">Todos los territorios</option><option value="LC">LOCAL</option><option value="NACIONAL">NACIONAL</option></select>
+            <select id="indicatorServiceFilter"><option value="ALL">Todos los servicios</option><option value="ENTREGA">ENTREGA</option><option value="RECOJO">RECOJO</option><option value="TRASLADO">TRASLADO</option></select>
+            <select id="indicatorComplianceFilter"><option value="ALL">Todos</option><option value="SI">Dentro de plazo</option><option value="NO">Fuera de plazo</option><option value="FF">FF</option></select>
+            <select id="indicatorDelayFilter"><option value="ALL">Todo atraso</option><option value="1">1 día de atraso</option><option value="2-3">2 a 3 días</option><option value="4-9">4 a 9 días</option><option value="10-15">10 a 15 días</option><option value="15-20">15 a 20 días</option><option value="21+">21 días a más</option></select>
+            <span id="indicatorPreviewCount" class="review-filter-info"></span>
+          </div>
+
+          <div class="indicator-bulkbar">
+            <div class="bulk-left">
+              <button id="selectFilteredIndicators" class="btn tiny secondary" type="button">Seleccionar todo lo filtrado</button>
+              <button id="clearIndicatorSelection" class="btn tiny ghost" type="button">Limpiar selección</button>
+              <span id="indicatorSelectedCount" class="selection-count">0 seleccionadas</span>
+            </div>
+            <div class="bulk-actions">
+              <button id="useOwnDeadlineBtn" class="btn tiny secondary" type="button" disabled>Usar fecha de plazo</button>
+              <input id="bulkIndicatorDate" class="bulk-date-input" type="text" placeholder="dd/mm/aaaa">
+              <button id="applySameDateBtn" class="btn tiny secondary" type="button" disabled>Aplicar misma fecha</button>
+              <button id="markSelectedFFBtn" class="btn tiny secondary" type="button" disabled>Marcar FF</button>
+              <select id="bulkReasonSelect" class="bulk-reason-select">
+                <option value="">Motivo de atraso...</option>
+                <option value="DEMORA POR TRÁMITE DE ACCESO">Demora por trámite de acceso</option>
+                <option value="SUBGERENTE DEMORÓ EN UBICAR EQUIPO EN OFICINA">Subgerente demoró en ubicar equipo en oficina</option>
+              </select>
+              <button id="applyReasonBtn" class="btn tiny secondary" type="button" disabled>Aplicar motivo</button>
+              <button id="zeroNegativeAlertsBtn" class="btn tiny ghost" type="button">Negativos → 0</button>
+            </div>
+          </div>
+
+          <div class="table-wrap indicator-preview-wrap">
+            <table class="data-table indicator-preview-table" id="indicatorPreviewTable"></table>
+          </div>
+          <div id="indicatorUnsavedNote" class="indicator-unsaved hidden"></div>
+        </div>
+
+        <div class="card action-card">
+          <div>
+            <div class="eyebrow">SALIDAS</div>
+            <h2>Indicadores y revisión Tradel</h2>
+            <p id="indicatorMessage">Carga y valida una prefactura para generar los reportes.</p>
+          </div>
+          <div class="action-buttons">
+            <button id="generateConsolidatedBtn" class="btn secondary" disabled>Generar consolidado</button>
+            <button id="generateRevisionBtn" class="btn secondary" disabled>Generar revisión Tradel</button>
+            <button id="generatePdfBtn" class="btn primary" disabled>Generar indicadores PDF</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>Regla de cumplimiento</h2>
+              <p>Fecha de plazo = fecha de guía + lead time en días hábiles (lunes a sábado), descontando los feriados configurados. Un servicio cumple cuando cierra en la fecha de plazo o antes. Los FF se consideran cumplidos, igual que en el archivo de revisión actual.</p>
+            </div>
+          </div>
+          <div id="indicatorIssues" class="indicator-issues hidden"></div>
+        </div>
+      </section>
+
+      <section id="view-historial" class="view">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="eyebrow">REGISTRO LOCAL</div>
+              <h2>Historial</h2>
+              <p>Se guarda únicamente el resumen de las prefacturas generadas, no los archivos ni la data completa.</p>
+            </div>
+            <button id="clearHistory" class="btn ghost danger">Limpiar historial</button>
+          </div>
+          <div id="historyList" class="history-list"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="rowDialog" class="dialog">
+    <form method="dialog" id="rowForm">
+      <div class="dialog-head"><h3>Editar registro</h3><button value="cancel" class="icon-btn">×</button></div>
+      <div id="rowFields" class="form-grid"></div>
+      <div class="dialog-actions"><button value="cancel" class="btn secondary">Cancelar</button><button id="saveRow" value="default" class="btn primary">Guardar y revalidar</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="masterDialog" class="dialog large">
+    <form method="dialog" id="masterForm">
+      <div class="dialog-head"><h3 id="masterDialogTitle">Editar tarifa</h3><button value="cancel" class="icon-btn">×</button></div>
+      <div id="masterFields" class="form-grid master-fields"></div>
+      <div class="dialog-actions"><button value="cancel" class="btn secondary">Cancelar</button><button id="saveMaster" value="default" class="btn primary">Guardar tarifa</button></div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js" onerror="this.onerror=null;this.src='https://unpkg.com/xlsx-js-style@1.2.0/dist/xlsx.bundle.js'"></script>
+  <script src="defaults.js"></script>
+  <script src="app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" onerror="this.onerror=null;this.src='https://unpkg.com/jspdf@2.5.2/dist/jspdf.umd.min.js'"></script>
+  <script src="report.js"></script>
+</body>
+</html>
