@@ -1,8 +1,13 @@
 (() => {
   'use strict';
 
-  const LS_NORMAL = 'pref_informatica_tarifas_normal_v3_exact';
-  const LS_MINI = 'pref_informatica_tarifas_mini_v2_exact';
+  // Claves estables: los tarifarios editados por el usuario deben sobrevivir a futuras versiones del sistema.
+  const LS_NORMAL = 'pref_informatica_tarifas_normal';
+  const LS_MINI = 'pref_informatica_tarifas_mini';
+  const LS_NORMAL_BACKUP = 'pref_informatica_tarifas_normal_backup';
+  const LS_MINI_BACKUP = 'pref_informatica_tarifas_mini_backup';
+  const LEGACY_NORMAL_KEYS = ['pref_informatica_tarifas_normal_v3_exact'];
+  const LEGACY_MINI_KEYS = ['pref_informatica_tarifas_mini_v2_exact'];
   const LS_HISTORY = 'pref_informatica_history_v1';
 
   const OUTPUT_HEADERS = [
@@ -84,18 +89,38 @@
 
   function cloneRows(rows) { return JSON.parse(JSON.stringify(rows)); }
 
-  function loadMasters() {
-    try {
-      state.masters.normal = JSON.parse(localStorage.getItem(LS_NORMAL)) || cloneRows(window.DEFAULT_MASTERS.tarifas);
-      state.masters.mini = JSON.parse(localStorage.getItem(LS_MINI)) || cloneRows(window.DEFAULT_MASTERS.mini);
-    } catch {
-      state.masters.normal = cloneRows(window.DEFAULT_MASTERS.tarifas);
-      state.masters.mini = cloneRows(window.DEFAULT_MASTERS.mini);
+  function loadStoredMaster(primaryKey, backupKey, legacyKeys, fallbackRows) {
+    const keys = [primaryKey, backupKey, ...legacyKeys];
+    for (const key of keys) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) continue;
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length >= 2 && Array.isArray(parsed[0])) {
+          // Migra automáticamente cualquier maestro guardado con una clave de una versión anterior.
+          const json = JSON.stringify(parsed);
+          localStorage.setItem(primaryKey, json);
+          localStorage.setItem(backupKey, json);
+          return parsed;
+        }
+      } catch (e) {
+        console.warn('No se pudo recuperar el tarifario guardado en', key, e);
+      }
     }
+    return cloneRows(fallbackRows);
+  }
+
+  function loadMasters() {
+    state.masters.normal = loadStoredMaster(LS_NORMAL, LS_NORMAL_BACKUP, LEGACY_NORMAL_KEYS, window.DEFAULT_MASTERS.tarifas);
+    state.masters.mini = loadStoredMaster(LS_MINI, LS_MINI_BACKUP, LEGACY_MINI_KEYS, window.DEFAULT_MASTERS.mini);
   }
 
   function saveMaster(kind) {
-    localStorage.setItem(kind === 'normal' ? LS_NORMAL : LS_MINI, JSON.stringify(state.masters[kind]));
+    const primaryKey = kind === 'normal' ? LS_NORMAL : LS_MINI;
+    const backupKey = kind === 'normal' ? LS_NORMAL_BACKUP : LS_MINI_BACKUP;
+    const json = JSON.stringify(state.masters[kind]);
+    localStorage.setItem(primaryKey, json);
+    localStorage.setItem(backupKey, json);
   }
 
   function loadHistory() {
@@ -263,7 +288,6 @@
     if (String(src.deliveryDate ?? '').trim() === '') errors.push('FECHA DE ENTREGA vacía.');
     if (!src.grTradel) errors.push('GR TRADEL vacía.');
     if (!src.grBBVA) errors.push('GR BBVA vacía.');
-    if (deliveryIsFF && service === 'TRASLADO' && mini !== 'SI') errors.push('TRASLADO con FF y MINI = NO: falta definir la regla de falso flete.');
 
     let tariff = null;
     if (code && ['SI','NO'].includes(mini) && ['REG','EXP'].includes(type)) {
@@ -288,7 +312,7 @@
       if (deliveryIsFF) {
         if (service === 'ENTREGA') falseFreight = tariff.firstKg + (0.35 * restWeight * tariff.addKg);
         else if (service === 'RECOJO') falseFreight = terr === 'LC' ? 2 : 8;
-        else if (service === 'TRASLADO' && mini === 'SI') falseFreight = 8;
+        else if (service === 'TRASLADO') falseFreight = terr === 'LC' ? 2 : 8;
       }
       const freightTotal = deliveryIsFF ? falseFreight : tariff.firstKg + kgFreight;
       const igv = freightTotal * 0.18;

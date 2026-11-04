@@ -1,0 +1,5 @@
+V1.16
+Correcciones:
+- Falso flete en TRASLADO: LC = S/ 2.00 + IGV; AE/TE = S/ 8.00 + IGV.
+- Tarifarios editados/importados usan claves estables y respaldo local para conservar cambios entre versiones.
+- Migra automáticamente los tarifarios guardados de V1.15/V1.14.
