@@ -3,8 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>Prefacturación Informática BBVA</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=1.17" />
 </head>
 <body>
   <div id="libWarning" class="lib-warning hidden">
@@ -43,7 +46,7 @@
           <h1 id="viewTitle">Nueva prefactura</h1>
           <p id="viewSubtitle">Carga la data mensual, valida y genera el Excel final.</p>
         </div>
-        <div class="topbar-status"><span class="status-dot"></span> Sistema local</div>
+        <div class="topbar-status"><span class="status-dot"></span> Sistema · V1.17</div>
       </header>
 
       <section id="view-nueva" class="view active">
@@ -313,9 +316,9 @@
   <div id="toast" class="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js" onerror="this.onerror=null;this.src='https://unpkg.com/xlsx-js-style@1.2.0/dist/xlsx.bundle.js'"></script>
-  <script src="defaults.js"></script>
-  <script src="app.js"></script>
+  <script src="defaults.js?v=1.17"></script>
+  <script src="app.js?v=1.17"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" onerror="this.onerror=null;this.src='https://unpkg.com/jspdf@2.5.2/dist/jspdf.umd.min.js'"></script>
-  <script src="report.js"></script>
+  <script src="report.js?v=1.17"></script>
 </body>
 </html>

@@ -1,4 +1,5 @@
-SISTEMA DE PREFACTURACION INFORMATICA BBVA - V1.14
+SISTEMA DE PREFACTURACION INFORMATICA BBVA - V1.17
+
 
 1. Descomprime toda la carpeta.
 2. Abre ABRIR_SISTEMA.bat o index.html con Chrome / Edge.
@@ -86,3 +87,10 @@ CAMBIOS V1.16
 - Ya no se bloquea TRASLADO + FF con MINI = NO.
 - Los cambios realizados en TARIFAS y MINI quedan guardados en el navegador con una clave estable y una copia de respaldo.
 - Si ya tenias cambios guardados en la version anterior, se migran automaticamente al abrir V1.16 en el mismo navegador/origen.
+
+
+CAMBIOS V1.17
+- TRASLADO + FF: LC S/2.00 + IGV; AE/TE S/8.00 + IGV.
+- Se elimina el bloqueo de TRASLADO FF con MINI = NO.
+- Se fuerza recarga de app.js en GitHub Pages mediante ?v=1.17.
+- Tarifarios personalizados se conservan en claves estables con respaldo local.
