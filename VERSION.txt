@@ -1,5 +1,5 @@
-V1.17
-- TRASLADO + FF: LC = S/ 2.00 sin IGV; AE/TE = S/ 8.00 sin IGV.
-- Eliminada la observación antigua que bloqueaba TRASLADO + FF con MINI = NO.
-- Recursos versionados (?v=1.17) para evitar que GitHub Pages/Chrome carguen app.js antiguo.
-- Tarifarios editados/importados conservan claves estables y respaldo en localStorage.
+V1.18
+- Código 904 (SEDE CENTRAL) usa la tarifa del 479 cuando no tiene fila propia en TARIFAS.
+- Nueva columna opcional FECHA DE PLAZO: si la data la trae (sale del seguimiento web, con horas de oficina y corte),
+  los indicadores usan esa fecha como plazo. Si no la trae, se sigue usando el lead time en días.
+- Recursos versionados (?v=1.18).

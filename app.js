@@ -9,6 +9,7 @@
   const LEGACY_NORMAL_KEYS = ['pref_informatica_tarifas_normal_v3_exact'];
   const LEGACY_MINI_KEYS = ['pref_informatica_tarifas_mini_v2_exact'];
   const LS_HISTORY = 'pref_informatica_history_v1';
+  const COD_ALIAS = { '904': '479' };
 
   const OUTPUT_HEADERS = [
     'ESTADO','COD','OFICINA','GR TRADEL','GR BBVA','PESO KG.','ORIGEN','DESTINO','MINI','TIPO','SERVICIO','CONTENIDO',
@@ -168,7 +169,11 @@
     const schema = masterSchema(kind);
     if (schema.cod < 0) return [];
     const key = norm(code).replace(/^0+/, '');
-    return state.masters[kind].slice(1).map((r,i)=>({row:r,index:i+1})).filter(x => norm(x.row[schema.cod]).replace(/^0+/,'') === key);
+    const find = k => state.masters[kind].slice(1).map((r,i)=>({row:r,index:i+1})).filter(x => norm(x.row[schema.cod]).replace(/^0+/,'') === k);
+    const found = find(key);
+    // 904 (SEDE CENTRAL) usa la misma tarifa que el 479 si no tiene fila propia.
+    if (!found.length && COD_ALIAS[key]) return find(COD_ALIAS[key]);
+    return found;
   }
 
   function getMasterRecord(kind, code, type) {
@@ -234,7 +239,8 @@
       status: idx(hm,['ESTADO']),
       requestDate: idx(hm,['FECHA DE GUIA','FECHA DE GUÍA']),
       deliveryDate: idx(hm,['FECHA DE ENTREGA2','FECHA DE ENTREGA']),
-      sourceTerr: idx(hm,['TERR'])
+      sourceTerr: idx(hm,['TERR']),
+      planDate: idx(hm,['FECHA DE PLAZO','FECHA PLAZO'])
     };
     const required = ['pre','code','office','grTradel','grBBVA','weight','mini','type','service','content','requestDate','deliveryDate'];
     const missing = required.filter(k=>col[k] < 0);
@@ -262,7 +268,8 @@
         status: col.status >= 0 ? String(r[col.status] ?? '').trim() : '',
         requestDate: r[col.requestDate],
         deliveryDate: r[col.deliveryDate],
-        sourceTerr: col.sourceTerr >= 0 ? String(r[col.sourceTerr] ?? '').trim() : ''
+        sourceTerr: col.sourceTerr >= 0 ? String(r[col.sourceTerr] ?? '').trim() : '',
+        planDate: col.planDate >= 0 ? r[col.planDate] : ''
       });
     }
     if (!data.length) throw new Error('No se encontraron registros con PRE informado.');
@@ -300,7 +307,7 @@
       _index:index, _sourceRow:src._sourceRow, src, errors, warnings,
       code, office:src.office, mini, type, service, weight,
       grTradel:src.grTradel, grBBVA:src.grBBVA, content:src.content, status:src.status || '',
-      requestDate:src.requestDate, deliveryDate:src.deliveryDate
+      requestDate:src.requestDate, deliveryDate:src.deliveryDate, planDate:src.planDate
     };
 
     if (!errors.length && tariff) {

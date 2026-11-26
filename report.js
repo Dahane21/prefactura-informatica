@@ -108,8 +108,10 @@
       if(!req){issues.push(`Fila ${r._sourceRow}: fecha de guía inválida.`);continue;}
       const srv=norm(r.service),terr=norm(r.terr);
       const lead=leadTimes?.[srv]?.[terr];
-      if(!Number.isFinite(Number(lead))){issues.push(`Fila ${r._sourceRow}: no existe lead time para ${srv} / ${terr}.`);continue;}
-      const deadline=addWorkingDays(req,Number(lead));
+      // Si la data trae FECHA DE PLAZO (del seguimiento: horas de oficina desde el corte), esa manda.
+      const plan=r.planDate?parseLocalDate(r.planDate):null;
+      if(!plan && !Number.isFinite(Number(lead))){issues.push(`Fila ${r._sourceRow}: no existe lead time para ${srv} / ${terr}.`);continue;}
+      const deadline=plan||addWorkingDays(req,Number(lead));
       const deliveryValue=useDraft && indicatorDraft.has(r._index) ? indicatorDraft.get(r._index) : r.deliveryDate;
       const ff=norm(deliveryValue)==='FF';
       let close=null,alert=0,complies='SI';
@@ -177,8 +179,9 @@
   function calcPreviewForDelivery(r,delivery,applyZero=true){
     const req=parseLocalDate(r.requestDate),srv=norm(r.service),terr=norm(r.terr),lead=leadTimes?.[srv]?.[terr];
     const ff=norm(delivery)==='FF';
-    if(!req||!Number.isFinite(Number(lead)))return {...r,_delivery:delivery,_deadline:null,_comp:'REVISAR',_alert:null,_ff:ff};
-    const deadline=addWorkingDays(req,Number(lead));
+    const plan=r.planDate?parseLocalDate(r.planDate):null;
+    if(!req||(!plan&&!Number.isFinite(Number(lead))))return {...r,_delivery:delivery,_deadline:null,_comp:'REVISAR',_alert:null,_ff:ff};
+    const deadline=plan||addWorkingDays(req,Number(lead));
     if(ff)return {...r,_delivery:'FF',_deadline:deadline,_comp:'SI',_alert:0,_ff:true};
     const close=parseLocalDate(delivery);
     if(!close)return {...r,_delivery:delivery,_deadline:deadline,_comp:'REVISAR',_alert:null,_ff:false};
